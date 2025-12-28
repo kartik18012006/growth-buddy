@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     // Populate entity details
     const remindersWithEntities = await Promise.all(
       reminders.map(async (reminder) => {
-        let entity = null;
+        let entity: any = null;
         if (reminder.entityType === 'task') {
           entity = await Task.findById(reminder.entityId);
         } else if (reminder.entityType === 'habit') {
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
           entity: entity
             ? {
                 _id: entity._id,
-                name: reminder.entityType === 'task' ? entity.title : entity.name,
+                name: reminder.entityType === 'task' ? (entity as any).title : (entity as any).name,
               }
             : null,
         };
