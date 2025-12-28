@@ -36,11 +36,21 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async jwt({ token, user, account }) {
+      // Store user info in token to avoid DB lookups on every request
+      if (user) {
+        token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
+      }
+      return token;
+    },
     async signIn({ user, account, profile }) {
       if (account?.provider === 'google' && user?.email) {
-        try {
-          // Set a timeout for database operations to prevent long delays
-          const dbPromise = (async () => {
+        // Run DB operations asynchronously without blocking sign-in
+        // Use setImmediate to run after response is sent
+        setImmediate(async () => {
+          try {
             await connectDB();
             const existingUser = await User.findOne({ email: user.email });
 
@@ -57,20 +67,12 @@ export const authOptions: NextAuthOptions = {
               await existingUser.save();
               console.log('✅ User updated:', user.email);
             }
-          })();
-
-          // Wait max 5 seconds for DB operation, then allow sign-in anyway
-          await Promise.race([
-            dbPromise,
-            new Promise((resolve) => setTimeout(resolve, 5000))
-          ]);
-          
-          return true;
-        } catch (error) {
-          console.error('⚠️ Error in signIn callback (allowing sign-in anyway):', error);
-          // Always allow sign-in even if DB operations fail
-          return true;
-        }
+          } catch (error) {
+            console.error('⚠️ Error in background user sync:', error);
+          }
+        });
+        
+        return true;
       }
       if (!user?.email) {
         console.error('❌ No email provided in user object');
@@ -79,27 +81,11 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async session({ session, token }) {
-      // Don't block session creation on DB operations
-      if (session.user?.email) {
-        try {
-          // Set timeout for session callback to prevent delays
-          const sessionPromise = (async () => {
-            await connectDB();
-            const user = await User.findOne({ email: session.user.email });
-            if (user) {
-              session.user.id = user._id.toString();
-              session.user.name = user.name;
-            }
-          })();
-
-          // Wait max 2 seconds for DB operation
-          await Promise.race([
-            sessionPromise,
-            new Promise((resolve) => setTimeout(resolve, 2000))
-          ]);
-        } catch (error) {
-          // Log error but don't block session creation
-          console.error('⚠️ Error in session callback:', error);
+      // Use token data instead of DB lookup for performance
+      if (token && session.user) {
+        session.user.id = token.id as string;
+        if (token.name) {
+          session.user.name = token.name as string;
         }
       }
       return session;
