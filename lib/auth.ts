@@ -81,5 +81,4 @@ export const authOptions: NextAuthOptions = {
   },
   secret: nextAuthSecret,
   debug: process.env.NODE_ENV === 'development',
-  callbacks: {
-
+};
