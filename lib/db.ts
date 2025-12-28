@@ -31,11 +31,12 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000, // 5 second timeout
+      serverSelectionTimeoutMS: 10000, // Increased to 10 seconds
       socketTimeoutMS: 45000,
       maxPoolSize: 10, // Maintain up to 10 socket connections
       minPoolSize: 2, // Maintain at least 2 socket connections
       maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
+      retryWrites: true,
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
@@ -43,6 +44,21 @@ async function connectDB() {
     }).catch((error) => {
       // Reset promise on error so we can retry
       cached.promise = null;
+      
+      // Provide helpful error message for IP whitelist issues
+      if (error?.message?.includes('IP') || error?.message?.includes('whitelist')) {
+        const enhancedError = new Error(
+          error.message + '\n\n' +
+          '🔧 FIX: Add 0.0.0.0/0 to MongoDB Atlas IP Whitelist:\n' +
+          '1. Go to MongoDB Atlas → Network Access\n' +
+          '2. Click "ADD IP ADDRESS"\n' +
+          '3. Click "ALLOW ACCESS FROM ANYWHERE" (or enter 0.0.0.0/0)\n' +
+          '4. Wait 1-2 minutes for changes to apply\n' +
+          'See FIX_MONGODB_ATLAS_IP.md for detailed instructions.'
+        );
+        throw enhancedError;
+      }
+      
       throw error;
     });
   }

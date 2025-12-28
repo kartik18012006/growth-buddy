@@ -122,6 +122,11 @@ export async function POST(req: NextRequest) {
     let errorMessage = 'Internal server error';
     if (error?.message) {
       errorMessage = error.message;
+      
+      // Clean up MongoDB connection errors for user display
+      if (errorMessage.includes('MongoDB Atlas') || errorMessage.includes('IP') || errorMessage.includes('whitelist')) {
+        errorMessage = errorMessage.split('\n\n')[0]; // Take only the first part
+      }
     } else if (error?.name === 'ValidationError') {
       errorMessage = Object.values(error.errors || {})
         .map((e: any) => e.message)
