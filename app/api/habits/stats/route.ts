@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
     const completions = await HabitCompletion.find(query).sort({ date: -1 });
 
     // Get habits if not filtering by specific habit
-    let habits = [];
+    let habits: any[] = [];
     if (!habitId) {
       const habitQuery: any = { userId: user._id, archived: false };
       habits = await Habit.find(habitQuery);
