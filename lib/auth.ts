@@ -37,20 +37,10 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, account }) {
-      // Store user info in token to avoid DB lookups on every request
+      // Store user info in token - no DB lookup for performance
       if (user) {
         token.email = user.email;
         token.name = user.name;
-        // Get user ID from database on first sign-in only
-        try {
-          await connectDB();
-          const dbUser = await User.findOne({ email: user.email });
-          if (dbUser) {
-            token.id = dbUser._id.toString();
-          }
-        } catch (error) {
-          console.error('⚠️ Error fetching user ID for token:', error);
-        }
       }
       return token;
     },
