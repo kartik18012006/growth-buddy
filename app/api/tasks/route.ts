@@ -92,8 +92,10 @@ export async function POST(req: NextRequest) {
             task.dueTime,
             timeZone
           );
-          task.calendarEventId = calendarEvent.id;
-          await task.save();
+          if (calendarEvent.id) {
+            task.calendarEventId = calendarEvent.id;
+            await task.save();
+          }
         } else {
           task.calendarEventId = duplicateId;
           await task.save();

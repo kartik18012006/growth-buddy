@@ -10,7 +10,8 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope: "openid email profile https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events",
+          scope: "openid email profile", // Calendar scopes removed for public access. Re-add after Google verification.
+          // To re-enable Calendar: add "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events"
         },
       },
     }),

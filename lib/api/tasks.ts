@@ -46,7 +46,7 @@ export const tasksApi = {
    * Get tasks for a specific date
    */
   getTasks: async (date?: string): Promise<Task[]> => {
-    const params = date ? { date } : {};
+    const params = date ? { date } : undefined;
     return apiClient.get<Task[]>('/api/tasks', params);
   },
 

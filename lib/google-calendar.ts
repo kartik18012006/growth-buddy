@@ -13,7 +13,7 @@ import { google } from 'googleapis';
 import User from '@/models/User';
 
 interface CalendarEvent {
-  id?: string;
+  id?: string | null;
   summary: string;
   description?: string;
   start: {
@@ -61,7 +61,9 @@ export async function getCalendarClient(userId: string) {
         const { credentials } = await oauth2Client.refreshAccessToken();
         
         // Update user with new tokens
-        user.googleCalendarConnection.accessToken = credentials.access_token;
+        if (credentials.access_token) {
+          user.googleCalendarConnection.accessToken = credentials.access_token;
+        }
         if (credentials.refresh_token) {
           user.googleCalendarConnection.refreshToken = credentials.refresh_token;
         }
@@ -167,7 +169,7 @@ export async function updateCalendarEvent(
   const endDate = taskDueTime ? new Date(taskDueTime) : new Date(taskDate);
   const isAllDay = !taskDueTime;
 
-  const event: CalendarEvent = {
+  const event: any = {
     ...existingEvent.data,
     summary: taskTitle,
     description: taskDescription || '',
