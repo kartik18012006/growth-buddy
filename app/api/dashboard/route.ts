@@ -51,11 +51,14 @@ export async function GET(req: NextRequest) {
       date: yesterday,
     });
 
-    // Calculate longest streak
+    // Calculate longest streak - optimize query
     const allCompletions = await HabitCompletion.find({
       userId: user._id,
       completed: true,
-    }).sort({ date: -1 }).limit(1000);
+    })
+      .sort({ date: -1 })
+      .limit(365) // Only need last year for streak calculation
+      .lean(); // Use lean() for faster queries (returns plain JS objects)
 
     let longestStreak = 0;
     if (allCompletions.length > 0) {
