@@ -22,7 +22,10 @@ export default function HabitsPage() {
   const [habits, setHabits] = useState<HabitWithCompletion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const today = format(new Date(), 'yyyy-MM-dd');
+  
+  // Get today's date string - recalculate on each render to always be current
+  const getToday = () => format(new Date(), 'yyyy-MM-dd');
+  const today = getToday();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
