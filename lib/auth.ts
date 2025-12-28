@@ -37,7 +37,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === 'google') {
+      if (account?.provider === 'google' && user?.email) {
         try {
           await connectDB();
           const existingUser = await User.findOne({ email: user.email });
@@ -50,16 +50,26 @@ export const authOptions: NextAuthOptions = {
               emailVerified: true,
               lastLoginAt: new Date(),
             });
+            console.log('✅ New user created:', user.email);
           } else {
             // Update existing user
             existingUser.lastLoginAt = new Date();
             await existingUser.save();
+            console.log('✅ User updated:', user.email);
           }
           return true;
         } catch (error) {
-          console.error('Error in signIn callback:', error);
-          return false;
+          // Log error but don't deny access - allow user to sign in even if DB operation fails
+          console.error('⚠️ Error in signIn callback (allowing sign-in anyway):', error);
+          // Return true to allow sign-in even if database operations fail
+          // This prevents AccessDenied errors due to temporary DB issues
+          return true;
         }
+      }
+      // If no email, deny access
+      if (!user?.email) {
+        console.error('❌ No email provided in user object');
+        return false;
       }
       return true;
     },
