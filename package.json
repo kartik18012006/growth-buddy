@@ -1,0 +1,45 @@
+{
+  "name": "growth-buddy",
+  "version": "1.0.0",
+  "description": "Personal development and productivity web application",
+  "scripts": {
+    "setup": "node setup-env.js",
+    "dev": "next dev -p 3002",
+    "dev:3000": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "chart.js": "^4.4.1",
+    "clsx": "^2.1.0",
+    "date-fns": "^3.0.6",
+    "framer-motion": "^12.23.26",
+    "googleapis": "^129.0.0",
+    "lucide-react": "^0.303.0",
+    "mongodb": "^6.3.0",
+    "mongoose": "^8.0.3",
+    "next": "^14.0.4",
+    "next-auth": "^4.24.5",
+    "node-cron": "^3.0.3",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^2.2.0",
+    "framer-motion": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.10.6",
+    "@types/node-cron": "^3.0.11",
+    "@types/react": "^18.2.46",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.4",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3"
+  }
+}
