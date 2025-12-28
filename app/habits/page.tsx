@@ -30,27 +30,17 @@ export default function HabitsPage() {
     }
   }, [status, router]);
 
-  // Store today's date string to detect day changes
-  const [currentDate, setCurrentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-
   useEffect(() => {
-    // Check if day has changed and update if needed
-    const checkDateChange = () => {
-      const newDate = format(new Date(), 'yyyy-MM-dd');
-      if (newDate !== currentDate) {
-        setCurrentDate(newDate);
-        fetchHabits(); // Refetch when day changes
-      }
-    };
-
-    // Check on mount
+    // Fetch habits immediately on mount - session is checked by middleware
     fetchHabits();
     
-    // Set up interval to check for day changes every minute
-    const interval = setInterval(checkDateChange, 60000); // Check every minute
+    // Set up interval to check for day changes every minute and refetch habits
+    const interval = setInterval(() => {
+      fetchHabits();
+    }, 60000); // Check every minute
     
     return () => clearInterval(interval);
-  }, [currentDate]); // Re-run if currentDate changes
+  }, []); // Empty deps - load once on mount
 
   const fetchHabits = async () => {
     try {
