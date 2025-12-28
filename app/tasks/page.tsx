@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 
 interface Task {
   _id: string;
+  userId?: string;
   title: string;
   description?: string;
   date: string;
@@ -16,6 +17,7 @@ interface Task {
   completed: boolean;
   dueTime?: string;
   category?: string;
+  createdAt?: string;
 }
 
 export default function TasksPage() {

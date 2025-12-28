@@ -135,7 +135,7 @@ export default function HabitsPage() {
     // Create optimistic habit object
     const optimisticHabit: HabitWithCompletion = {
       _id: `temp-${Date.now()}`,
-      userId: '',
+      userId: session?.user?.email || '',
       name: formData.name,
       description: formData.description,
       category: formData.category,
