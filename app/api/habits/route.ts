@@ -89,9 +89,14 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(habit, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating habit:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Provide more specific error messages
+    const errorMessage = error?.message || 'Internal server error';
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: error?.name === 'ValidationError' ? 400 : 500 }
+    );
   }
 }
 

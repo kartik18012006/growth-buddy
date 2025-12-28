@@ -38,10 +38,14 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     const url = `${this.baseUrl}${endpoint}`;
 
     const config: RequestInit = {
       ...options,
+      signal: controller.signal, // Add abort signal
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
@@ -51,6 +55,7 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
+      clearTimeout(timeoutId); // Clear timeout on success
 
       // Handle non-JSON responses
       const contentType = response.headers.get('content-type');
@@ -76,8 +81,15 @@ class ApiClient {
 
       return data as T;
     } catch (error) {
+      clearTimeout(timeoutId); // Clear timeout on error
+      
       if (error instanceof ApiError) {
         throw error;
+      }
+
+      // Handle abort (timeout)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new ApiError('Request timeout - please try again', 408);
       }
 
       // Network or other errors

@@ -80,10 +80,14 @@ export default function HabitsPage() {
   }) => {
     try {
       await habitsApi.createHabit(formData);
+      setShowAddForm(false);
       // Refresh all habits to ensure consistent data and proper grid display
       await fetchHabits();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding habit:', error);
+      // Extract error message from ApiError
+      const errorMessage = error?.data?.error || error?.message || 'Internal server error';
+      alert(`Failed to add habit: ${errorMessage}`);
     }
   };
 
