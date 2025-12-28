@@ -3,11 +3,31 @@ import GoogleProvider from 'next-auth/providers/google';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 
+// Get environment variables with validation
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const nextAuthSecret = process.env.NEXTAUTH_SECRET;
+const nextAuthUrl = process.env.NEXTAUTH_URL;
+
+// Validate required environment variables
+if (!googleClientId) {
+  console.error('❌ GOOGLE_CLIENT_ID is not set in environment variables');
+}
+if (!googleClientSecret) {
+  console.error('❌ GOOGLE_CLIENT_SECRET is not set in environment variables');
+}
+if (!nextAuthSecret) {
+  console.error('❌ NEXTAUTH_SECRET is not set in environment variables');
+}
+if (!nextAuthUrl) {
+  console.warn('⚠️ NEXTAUTH_URL is not set - this may cause issues');
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: googleClientId || '',
+      clientSecret: googleClientSecret || '',
       authorization: {
         params: {
           scope: "openid email profile", // Calendar scopes removed for public access. Re-add after Google verification.
@@ -58,7 +78,9 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/',
+    error: '/api/auth/error',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: nextAuthSecret || 'fallback-secret-change-in-production',
+  debug: process.env.NODE_ENV === 'development',
 };
 
