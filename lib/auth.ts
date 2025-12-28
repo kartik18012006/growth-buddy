@@ -39,34 +39,39 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       if (account?.provider === 'google' && user?.email) {
         try {
-          await connectDB();
-          const existingUser = await User.findOne({ email: user.email });
+          // Set a timeout for database operations to prevent long delays
+          const dbPromise = (async () => {
+            await connectDB();
+            const existingUser = await User.findOne({ email: user.email });
 
-          if (!existingUser) {
-            // Create new user
-            await User.create({
-              email: user.email,
-              name: user.name || 'User',
-              emailVerified: true,
-              lastLoginAt: new Date(),
-            });
-            console.log('✅ New user created:', user.email);
-          } else {
-            // Update existing user
-            existingUser.lastLoginAt = new Date();
-            await existingUser.save();
-            console.log('✅ User updated:', user.email);
-          }
+            if (!existingUser) {
+              await User.create({
+                email: user.email,
+                name: user.name || 'User',
+                emailVerified: true,
+                lastLoginAt: new Date(),
+              });
+              console.log('✅ New user created:', user.email);
+            } else {
+              existingUser.lastLoginAt = new Date();
+              await existingUser.save();
+              console.log('✅ User updated:', user.email);
+            }
+          })();
+
+          // Wait max 5 seconds for DB operation, then allow sign-in anyway
+          await Promise.race([
+            dbPromise,
+            new Promise((resolve) => setTimeout(resolve, 5000))
+          ]);
+          
           return true;
         } catch (error) {
-          // Log error but don't deny access - allow user to sign in even if DB operation fails
           console.error('⚠️ Error in signIn callback (allowing sign-in anyway):', error);
-          // Return true to allow sign-in even if database operations fail
-          // This prevents AccessDenied errors due to temporary DB issues
+          // Always allow sign-in even if DB operations fail
           return true;
         }
       }
-      // If no email, deny access
       if (!user?.email) {
         console.error('❌ No email provided in user object');
         return false;
@@ -74,12 +79,27 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async session({ session, token }) {
+      // Don't block session creation on DB operations
       if (session.user?.email) {
-        await connectDB();
-        const user = await User.findOne({ email: session.user.email });
-        if (user) {
-          session.user.id = user._id.toString();
-          session.user.name = user.name;
+        try {
+          // Set timeout for session callback to prevent delays
+          const sessionPromise = (async () => {
+            await connectDB();
+            const user = await User.findOne({ email: session.user.email });
+            if (user) {
+              session.user.id = user._id.toString();
+              session.user.name = user.name;
+            }
+          })();
+
+          // Wait max 2 seconds for DB operation
+          await Promise.race([
+            sessionPromise,
+            new Promise((resolve) => setTimeout(resolve, 2000))
+          ]);
+        } catch (error) {
+          // Log error but don't block session creation
+          console.error('⚠️ Error in session callback:', error);
         }
       }
       return session;
