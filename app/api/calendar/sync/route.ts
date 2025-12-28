@@ -118,8 +118,12 @@ export async function POST(req: NextRequest) {
         timeZone
       );
 
-      task.calendarEventId = calendarEvent.id;
-      await task.save();
+      if (calendarEvent.id) {
+        task.calendarEventId = calendarEvent.id;
+        await task.save();
+      } else {
+        throw new Error('Calendar event created but no ID returned');
+      }
     } else if (syncAction === 'update' || task.calendarEventId) {
       // Update existing calendar event
       if (!task.calendarEventId) {
