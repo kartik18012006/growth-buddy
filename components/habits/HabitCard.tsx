@@ -6,7 +6,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check, Sparkles } from 'lucide-react';
+import { Check, Sparkles, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface HabitCardProps {
