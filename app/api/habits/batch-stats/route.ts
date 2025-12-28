@@ -73,12 +73,16 @@ export async function GET(req: NextRequest) {
     const stats = habits.map((habit: any) => {
       const habitCompletions = completionsByHabit.get(habit._id.toString()) || [];
       
-      // Get today's completion
+      // Get today's completion - normalize dates for comparison
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayCompletion = habitCompletions.find(
-        (c: any) => new Date(c.date).getTime() === today.getTime()
-      );
+      const todayTime = today.getTime();
+      
+      const todayCompletion = habitCompletions.find((c: any) => {
+        const completionDate = new Date(c.date);
+        completionDate.setHours(0, 0, 0, 0);
+        return completionDate.getTime() === todayTime;
+      });
 
       // Format completions array
       const formattedCompletions = habitCompletions.map((c: any) => ({

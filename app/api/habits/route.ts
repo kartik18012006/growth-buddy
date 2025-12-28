@@ -30,16 +30,18 @@ export async function GET(req: NextRequest) {
     // Use .lean() for faster queries (plain JS objects)
     const habits = await Habit.find(query).sort({ order: 1, createdAt: 1 }).lean();
 
-    // Get today's completions
+    // Get today's completions - use start and end of day to ensure we get all of today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(today);
+    todayEnd.setHours(23, 59, 59, 999);
 
     // Get completions for all habits in a single optimized query
     const habitIds = habits.map((h: any) => h._id);
     const completions = await HabitCompletion.find({
       userId: user._id,
       habitId: { $in: habitIds },
-      date: today,
+      date: { $gte: today, $lte: todayEnd },
     }).lean();
 
     // Create a map for O(1) lookup
