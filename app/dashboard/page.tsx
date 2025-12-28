@@ -142,7 +142,8 @@ export default function Dashboard() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  // Don't block rendering on loading - show page immediately
+  if (status === 'unauthenticated') {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">

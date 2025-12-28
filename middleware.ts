@@ -1,13 +1,20 @@
 import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
 
-export default withAuth({
-  callbacks: {
-    authorized: ({ token }) => !!token,
+export default withAuth(
+  function middleware(req) {
+    // Allow request to proceed immediately if token exists
+    return NextResponse.next();
   },
-  pages: {
-    signIn: '/',
-  },
-});
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token,
+    },
+    pages: {
+      signIn: '/',
+    },
+  }
+);
 
 export const config = {
   matcher: ['/dashboard/:path*', '/tasks/:path*', '/habits/:path*', '/sleep/:path*', '/analytics/:path*', '/settings/:path*'],
