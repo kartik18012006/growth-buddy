@@ -50,60 +50,72 @@ export default function HabitsPage() {
       setHabits(habitsWithTodayStatus);
       setLoading(false);
       
-      // Fetch completion data for all habits in a single optimized call
+      // Load completion data using optimized batch endpoint (single API call)
       if (habitsData.length > 0) {
-        try {
-          const habitIds = habitsData.map((h: any) => h._id);
-          
-          // Fetch all completions in parallel batches (max 5 at a time to avoid overload)
-          const batchSize = 5;
-          const batches = [];
-          for (let i = 0; i < habitIds.length; i += batchSize) {
-            batches.push(habitIds.slice(i, i + batchSize));
-          }
-          
-          const allCompletionsData = await Promise.all(
-            batches.map(batch =>
-              Promise.all(
-                batch.map(habitId => 
-                  habitsApi.getHabitStats('daily', habitId).catch(() => null)
-                )
-              )
-            )
-          );
-          
-          // Flatten and process results
-          const completionsMap = new Map();
-          allCompletionsData.flat().forEach((stats, index) => {
-            if (stats?.stats?.[0]) {
-              const habitId = habitIds[Math.floor(index / batchSize) * batchSize + (index % batchSize)];
-              const todayCompletion = stats.stats[0]?.completions?.find(
-                (c) => format(parseISO(c.date), 'yyyy-MM-dd') === today
-              );
-              completionsMap.set(habitId, {
-                todayCompleted: todayCompletion?.completed || false,
-                completions: stats.stats[0]?.completions || [],
-              });
-            }
-          });
-          
-          // Update habits with completion data
-          setHabits((prevHabits) =>
-            prevHabits.map((habit) => {
-              const completionData = completionsMap.get(habit._id);
-              return completionData
-                ? {
+        // Don't await - let it load in background without blocking
+        (async () => {
+          try {
+            const habitIds = habitsData.map((h: any) => h._id);
+            
+            // Use new optimized batch endpoint - single query for all habits
+            const batchStats = await habitsApi.getBatchHabitStats(habitIds);
+            
+            // Create a map for fast lookup
+            const statsMap = new Map(
+              batchStats.stats.map(s => [s.habitId, s])
+            );
+            
+            // Update all habits at once
+            setHabits((prevHabits) =>
+              prevHabits.map((habit) => {
+                const stats = statsMap.get(habit._id);
+                if (stats) {
+                  return {
                     ...habit,
-                    todayCompleted: completionData.todayCompleted,
-                    completions: completionData.completions,
-                  }
-                : habit;
-            })
-          );
-        } catch (error) {
-          console.error('Error loading completion data:', error);
-          // Don't fail - habits are already shown
-        }
+                    todayCompleted: stats.todayCompleted,
+                    completions: stats.completions || [],
+                  };
+                }
+                return habit;
+              })
+            );
+          } catch (error) {
+            console.error('Error loading batch completion data:', error);
+            // Fallback to individual requests if batch fails
+            try {
+              const habitIds = habitsData.map((h: any) => h._id);
+              const batchSize = 10;
+              for (let i = 0; i < habitIds.length; i += batchSize) {
+                const batch = habitIds.slice(i, i + batchSize);
+                const batchResults = await Promise.all(
+                  batch.map(habitId => 
+                    habitsApi.getHabitStats('daily', habitId).catch(() => null)
+                  )
+                );
+                
+                setHabits((prevHabits) =>
+                  prevHabits.map((habit) => {
+                    const batchIndex = batch.findIndex(id => id === habit._id);
+                    if (batchIndex >= 0 && batchResults[batchIndex]?.stats?.[0]) {
+                      const stats = batchResults[batchIndex].stats[0];
+                      const todayCompletion = stats.completions?.find(
+                        (c: any) => format(parseISO(c.date), 'yyyy-MM-dd') === today
+                      );
+                      return {
+                        ...habit,
+                        todayCompleted: todayCompletion?.completed || habit.todayCompleted,
+                        completions: stats.completions || [],
+                      };
+                    }
+                    return habit;
+                  })
+                );
+              }
+            } catch (fallbackError) {
+              console.error('Error in fallback completion loading:', fallbackError);
+            }
+          }
+        })();
       }
     } catch (error) {
       console.error('Error fetching habits:', error);

@@ -125,6 +125,19 @@ export const habitsApi = {
 
     return apiClient.get('/api/habits/stats', params);
   },
+
+  /**
+   * Get batch stats for multiple habits (optimized - single query)
+   */
+  getBatchHabitStats: async (habitIds: string[]): Promise<{ stats: Array<{
+    habitId: string;
+    habitName: string;
+    todayCompleted: boolean;
+    completions: Array<{ date: string; completed: boolean; notes?: string }>;
+  }> }> => {
+    const params: Record<string, string> = { habitIds: habitIds.join(',') };
+    return apiClient.get('/api/habits/batch-stats', params);
+  },
 };
 
 
