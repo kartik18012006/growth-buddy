@@ -20,6 +20,7 @@ interface HabitCardProps {
     streak?: number;
   };
   onToggle: (habitId: string) => void;
+  onDelete?: (habitId: string) => void;
   index: number;
 }
 
