@@ -48,9 +48,17 @@ export async function POST(req: NextRequest) {
     }
 
     await connectDB();
-    const user = await User.findOne({ email: session.user.email });
+    
+    // Find or create user if not found (handles async sign-in user creation failure)
+    let user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      console.log('Creating new user:', session.user.email);
+      user = await User.create({
+        email: session.user.email,
+        name: session.user.name || 'User',
+        emailVerified: true,
+        lastLoginAt: new Date(),
+      });
     }
 
     const body = await req.json();
