@@ -91,8 +91,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(habit, { status: 201 });
   } catch (error: any) {
     console.error('Error creating habit:', error);
-    // Provide more specific error messages
-    const errorMessage = error?.message || 'Internal server error';
+    
+    // Extract error message from Mongoose validation errors
+    let errorMessage = 'Internal server error';
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (error?.name === 'ValidationError') {
+      errorMessage = Object.values(error.errors || {})
+        .map((e: any) => e.message)
+        .join(', ');
+    }
+    
     return NextResponse.json(
       { error: errorMessage },
       { status: error?.name === 'ValidationError' ? 400 : 500 }

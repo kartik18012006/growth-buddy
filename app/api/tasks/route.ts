@@ -107,9 +107,23 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(task, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating task:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    
+    // Extract error message from Mongoose validation errors
+    let errorMessage = 'Internal server error';
+    if (error?.message) {
+      errorMessage = error.message;
+    } else if (error?.name === 'ValidationError') {
+      errorMessage = Object.values(error.errors || {})
+        .map((e: any) => e.message)
+        .join(', ');
+    }
+    
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: error?.name === 'ValidationError' ? 400 : 500 }
+    );
   }
 }
 
