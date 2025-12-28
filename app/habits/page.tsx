@@ -37,36 +37,76 @@ export default function HabitsPage() {
 
   const fetchHabits = async () => {
     try {
+      // Fetch habits first - they have todayCompleted from the API
       const habitsData = await habitsApi.getHabits();
       
-      // Fetch completion status for each habit
-      const habitsWithCompletion = await Promise.all(
-        habitsData.map(async (habit) => {
-          try {
-            const stats = await habitsApi.getHabitStats('daily', habit._id);
-            const todayCompletion = stats.stats[0]?.completions?.find(
-              (c) => format(parseISO(c.date), 'yyyy-MM-dd') === today
-            );
-            
-            return {
-              ...habit,
-              todayCompleted: todayCompletion?.completed || false,
-              completions: stats.stats[0]?.completions || [],
-            };
-          } catch (error) {
-            return {
-              ...habit,
-              todayCompleted: false,
-              completions: [],
-            };
+      // Show habits immediately with today's completion status
+      const habitsWithTodayStatus = habitsData.map((habit: any) => ({
+        ...habit,
+        todayCompleted: habit.todayCompleted || false,
+        completions: [], // Will be loaded next
+      }));
+      
+      setHabits(habitsWithTodayStatus);
+      setLoading(false);
+      
+      // Fetch completion data for all habits in a single optimized call
+      if (habitsData.length > 0) {
+        try {
+          const habitIds = habitsData.map((h: any) => h._id);
+          
+          // Fetch all completions in parallel batches (max 5 at a time to avoid overload)
+          const batchSize = 5;
+          const batches = [];
+          for (let i = 0; i < habitIds.length; i += batchSize) {
+            batches.push(habitIds.slice(i, i + batchSize));
           }
-        })
-      );
-
-      setHabits(habitsWithCompletion);
+          
+          const allCompletionsData = await Promise.all(
+            batches.map(batch =>
+              Promise.all(
+                batch.map(habitId => 
+                  habitsApi.getHabitStats('daily', habitId).catch(() => null)
+                )
+              )
+            )
+          );
+          
+          // Flatten and process results
+          const completionsMap = new Map();
+          allCompletionsData.flat().forEach((stats, index) => {
+            if (stats?.stats?.[0]) {
+              const habitId = habitIds[Math.floor(index / batchSize) * batchSize + (index % batchSize)];
+              const todayCompletion = stats.stats[0]?.completions?.find(
+                (c) => format(parseISO(c.date), 'yyyy-MM-dd') === today
+              );
+              completionsMap.set(habitId, {
+                todayCompleted: todayCompletion?.completed || false,
+                completions: stats.stats[0]?.completions || [],
+              });
+            }
+          });
+          
+          // Update habits with completion data
+          setHabits((prevHabits) =>
+            prevHabits.map((habit) => {
+              const completionData = completionsMap.get(habit._id);
+              return completionData
+                ? {
+                    ...habit,
+                    todayCompleted: completionData.todayCompleted,
+                    completions: completionData.completions,
+                  }
+                : habit;
+            })
+          );
+        } catch (error) {
+          console.error('Error loading completion data:', error);
+          // Don't fail - habits are already shown
+        }
+      }
     } catch (error) {
       console.error('Error fetching habits:', error);
-    } finally {
       setLoading(false);
     }
   };

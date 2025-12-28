@@ -33,13 +33,21 @@ export async function GET(req: NextRequest) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Get completions for all habits in a single query
+    const habitIds = habits.map(h => h._id);
     const completions = await HabitCompletion.find({
       userId: user._id,
+      habitId: { $in: habitIds },
       date: today,
-    });
+    }).lean();
+
+    // Create a map for fast lookup
+    const completionMap = new Map(
+      completions.map(c => [c.habitId.toString(), c])
+    );
 
     const habitsWithCompletion = habits.map(habit => {
-      const completion = completions.find(c => c.habitId.toString() === habit._id.toString());
+      const completion = completionMap.get(habit._id.toString());
       return {
         ...habit.toObject(),
         todayCompleted: completion?.completed || false,

@@ -47,6 +47,7 @@ export default function TasksPage() {
 
   const fetchTasks = async () => {
     try {
+      setLoading(true);
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const response = await fetch(`/api/tasks?date=${dateStr}`);
       if (response.ok) {
