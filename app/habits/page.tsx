@@ -235,6 +235,22 @@ export default function HabitsPage() {
     }
   };
 
+  const handleDeleteHabit = async (habitId: string) => {
+    if (!confirm('Are you sure you want to delete this habit? This will also delete all completion history.')) {
+      return;
+    }
+
+    try {
+      await habitsApi.deleteHabit(habitId);
+      // Remove from UI immediately
+      setHabits((prev) => prev.filter((h) => h._id !== habitId));
+    } catch (error: any) {
+      console.error('Error deleting habit:', error);
+      const errorMessage = error?.data?.error || error?.message || 'Failed to delete habit';
+      alert(`Failed to delete habit: ${errorMessage}`);
+    }
+  };
+
   const handleGridCompletionChange = async (habitId: string, date: string, completed: boolean) => {
     try {
       // Update local state optimistically
@@ -390,6 +406,7 @@ export default function HabitsPage() {
                 <HabitCard
                   habit={habit}
                   onToggle={handleToggleComplete}
+                  onDelete={handleDeleteHabit}
                   index={index}
                 />
                 {/* Habit Grid */}

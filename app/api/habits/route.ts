@@ -27,29 +27,30 @@ export async function GET(req: NextRequest) {
       query.archived = false;
     }
 
-    const habits = await Habit.find(query).sort({ order: 1, createdAt: 1 });
+    // Use .lean() for faster queries (plain JS objects)
+    const habits = await Habit.find(query).sort({ order: 1, createdAt: 1 }).lean();
 
     // Get today's completions
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get completions for all habits in a single query
-    const habitIds = habits.map(h => h._id);
+    // Get completions for all habits in a single optimized query
+    const habitIds = habits.map((h: any) => h._id);
     const completions = await HabitCompletion.find({
       userId: user._id,
       habitId: { $in: habitIds },
       date: today,
     }).lean();
 
-    // Create a map for fast lookup
+    // Create a map for O(1) lookup
     const completionMap = new Map(
-      completions.map(c => [c.habitId.toString(), c])
+      completions.map((c: any) => [c.habitId.toString(), c])
     );
 
-    const habitsWithCompletion = habits.map(habit => {
+    const habitsWithCompletion = habits.map((habit: any) => {
       const completion = completionMap.get(habit._id.toString());
       return {
-        ...habit.toObject(),
+        ...habit,
         todayCompleted: completion?.completed || false,
         completionId: completion?._id,
       };

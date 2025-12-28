@@ -73,16 +73,16 @@ export async function GET(req: NextRequest) {
       query.habitId = habitId;
     }
 
-    // Get completions
-    const completions = await HabitCompletion.find(query).sort({ date: -1 });
+    // Get completions - use .lean() for faster queries
+    const completions = await HabitCompletion.find(query).sort({ date: -1 }).lean();
 
-    // Get habits if not filtering by specific habit
+    // Get habits if not filtering by specific habit - use .lean() for faster queries
     let habits: any[] = [];
     if (!habitId) {
       const habitQuery: any = { userId: user._id, archived: false };
-      habits = await Habit.find(habitQuery);
+      habits = await Habit.find(habitQuery).lean();
     } else {
-      const habit = await Habit.findOne({ _id: habitId, userId: user._id });
+      const habit = await Habit.findOne({ _id: habitId, userId: user._id }).lean();
       if (habit) {
         habits = [habit];
       }

@@ -23,7 +23,7 @@ interface HabitCardProps {
   index: number;
 }
 
-export default function HabitCard({ habit, onToggle, index }: HabitCardProps) {
+export default function HabitCard({ habit, onToggle, onDelete, index }: HabitCardProps) {
   const colorVariants: Record<string, string> = {
     '#FF6B9D': 'from-pink-200 to-pink-100',
     '#A78BFA': 'from-purple-200 to-purple-100',

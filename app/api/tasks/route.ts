@@ -24,10 +24,11 @@ export async function GET(req: NextRequest) {
     const targetDate = date ? new Date(date) : new Date();
     targetDate.setHours(0, 0, 0, 0);
 
+    // Use .lean() for faster queries (plain JS objects instead of Mongoose documents)
     const tasks = await Task.find({
       userId: user._id,
       date: { $gte: targetDate, $lt: new Date(targetDate.getTime() + 24 * 60 * 60 * 1000) },
-    }).sort({ priority: -1, createdAt: 1 });
+    }).sort({ priority: -1, createdAt: 1 }).lean();
 
     return NextResponse.json(tasks);
   } catch (error) {
