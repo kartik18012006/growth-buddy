@@ -3,35 +3,34 @@ import GoogleProvider from 'next-auth/providers/google';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 
-// Get environment variables with validation
+// Get environment variables
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
 const nextAuthSecret = process.env.NEXTAUTH_SECRET;
 const nextAuthUrl = process.env.NEXTAUTH_URL;
 
-// Validate required environment variables
+// Validate required environment variables (log warnings, don't throw in production)
 if (!googleClientId) {
-  console.error('❌ GOOGLE_CLIENT_ID is not set in environment variables');
+  console.error('❌ GOOGLE_CLIENT_ID is not set');
 }
 if (!googleClientSecret) {
-  console.error('❌ GOOGLE_CLIENT_SECRET is not set in environment variables');
+  console.error('❌ GOOGLE_CLIENT_SECRET is not set');
 }
 if (!nextAuthSecret) {
-  console.error('❌ NEXTAUTH_SECRET is not set in environment variables');
+  console.error('❌ NEXTAUTH_SECRET is not set');
 }
 if (!nextAuthUrl) {
-  console.warn('⚠️ NEXTAUTH_URL is not set - this may cause issues');
+  console.warn('⚠️ NEXTAUTH_URL is not set');
 }
 
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
-      clientId: googleClientId || '',
-      clientSecret: googleClientSecret || '',
+      clientId: googleClientId || 'missing-client-id',
+      clientSecret: googleClientSecret || 'missing-client-secret',
       authorization: {
         params: {
-          scope: "openid email profile", // Calendar scopes removed for public access. Re-add after Google verification.
-          // To re-enable Calendar: add "https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events"
+          scope: "openid email profile",
         },
       },
     }),
@@ -78,9 +77,9 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/',
-    error: '/api/auth/error',
+    error: '/auth/error',
   },
-  secret: nextAuthSecret || 'fallback-secret-change-in-production',
+  secret: nextAuthSecret,
   debug: process.env.NODE_ENV === 'development',
-};
+  callbacks: {
 
