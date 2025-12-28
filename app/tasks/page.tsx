@@ -85,7 +85,6 @@ export default function TasksPage() {
     // Create optimistic task object
     const optimisticTask: Task = {
       _id: `temp-${Date.now()}`,
-      userId: '',
       title: requestBody.title,
       description: requestBody.description,
       date: dateStr,
