@@ -10,7 +10,7 @@ A comprehensive personal development and productivity web application that helps
 - 😴 **Sleep Tracking** - Monitor sleep patterns and quality
 - 📊 **Analytics Dashboard** - Visualize progress with charts and insights
 - 🔔 **Reminder System** - Never miss a habit or task
-- 📅 **Google Calendar Integration** - Sync with your calendar (via Google Sign-In)
+- 📅 **Google Calendar Integration** - Sync tasks with Google Calendar (optional)
 
 ## Tech Stack
 
@@ -32,56 +32,83 @@ A comprehensive personal development and productivity web application that helps
 
 ### Installation
 
-1. **Clone the repository and install dependencies:**
+1. **Clone the repository:**
+
+```bash
+git clone https://github.com/your-username/growth-buddy.git
+cd growth-buddy
+```
+
+2. **Install dependencies:**
 
 ```bash
 npm install
 ```
 
-2. **Set up environment variables:**
+3. **Set up environment variables:**
 
 Create a `.env.local` file in the root directory:
 
 ```env
-# Database
-MONGODB_URI=mongodb://localhost:27017/growth-buddy
+# Database (MongoDB Atlas connection string)
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
 
-# NextAuth
-NEXTAUTH_URL=http://localhost:3001
+# NextAuth Configuration
+NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key-here
 
-# Google OAuth
+# Google OAuth Credentials
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
-3. **Generate NextAuth Secret:**
+4. **Generate NextAuth Secret:**
 
 ```bash
 openssl rand -base64 32
 ```
 
-4. **Set up Google OAuth:**
+Copy the output and paste it as `NEXTAUTH_SECRET` in your `.env.local` file.
+
+5. **Set up Google OAuth:**
 
 - Go to [Google Cloud Console](https://console.cloud.google.com/)
 - Create a new project or select an existing one
-- Enable Google+ API
-- Go to "Credentials" → "Create Credentials" → "OAuth client ID"
-- Select "Web application"
-- Add authorized redirect URIs:
-  - `http://localhost:3000/api/auth/callback/google` (development)
-  - `https://yourdomain.com/api/auth/callback/google` (production)
-- Copy the Client ID and Client Secret to your `.env.local` file
+- Go to **APIs & Services** → **Credentials**
+- Click **"+ CREATE CREDENTIALS"** → **"OAuth client ID"**
+- Configure OAuth consent screen if prompted (select External for public access)
+- Application type: **"Web application"**
+- Name: **"Growth Buddy"**
+- Authorized redirect URIs:
+  - `http://localhost:3000/api/auth/callback/google` (for local development)
+  - Add your production URL after deployment: `https://yourdomain.com/api/auth/callback/google`
+- Click **"CREATE"**
+- Copy the **Client ID** and **Client Secret** to your `.env.local` file
+- **Important:** Client ID must include the full `.apps.googleusercontent.com` suffix
 
-5. **Start the development server:**
+6. **Start the development server:**
 
 ```bash
 npm run dev
 ```
 
-6. **Open your browser:**
+7. **Open your browser:**
 
 Navigate to [http://localhost:3000](http://localhost:3000)
+
+---
+
+## 🚀 Deployment
+
+For detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md).
+
+### Quick Deploy to Vercel
+
+1. Push your code to GitHub
+2. Import your repository in [Vercel](https://vercel.com)
+3. Add environment variables (same as `.env.local` but update `NEXTAUTH_URL` to your Vercel URL)
+4. Update Google Cloud Console redirect URI with your Vercel URL
+5. Deploy!
 
 ## Project Structure
 

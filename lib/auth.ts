@@ -30,27 +30,10 @@ export const authOptions: NextAuthOptions = {
               name: user.name || 'User',
               emailVerified: true,
               lastLoginAt: new Date(),
-              googleCalendarConnection: {
-                accessToken: account.access_token,
-                refreshToken: account.refresh_token,
-                tokenExpiresAt: account.expires_at ? new Date(account.expires_at * 1000) : undefined,
-                connectedAt: new Date(),
-              },
             });
           } else {
             // Update existing user
             existingUser.lastLoginAt = new Date();
-            if (account.access_token) {
-              if (!existingUser.googleCalendarConnection) {
-                existingUser.googleCalendarConnection = {};
-              }
-              existingUser.googleCalendarConnection.accessToken = account.access_token;
-              existingUser.googleCalendarConnection.refreshToken = account.refresh_token;
-              existingUser.googleCalendarConnection.tokenExpiresAt = account.expires_at
-                ? new Date(account.expires_at * 1000)
-                : undefined;
-              existingUser.googleCalendarConnection.connectedAt = new Date();
-            }
             await existingUser.save();
           }
           return true;
