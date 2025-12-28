@@ -59,6 +59,20 @@ export default function HabitCard({ habit, onToggle, onDelete, index }: HabitCar
             : gradientClass
         )}
       >
+        {/* Delete Button */}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(habit._id);
+            }}
+            className="absolute top-4 right-4 p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors z-10"
+            title="Delete habit"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+        
         {/* Glow effect on hover */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br from-white/20 to-transparent pointer-events-none" />
 
