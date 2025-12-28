@@ -37,10 +37,9 @@ export default function SleepPage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session) {
-      fetchSleepRecords();
-    }
-  }, [session]);
+    // Fetch sleep records immediately on mount - session is checked by middleware
+    fetchSleepRecords();
+  }, []); // Empty deps - load once on mount
 
   const fetchSleepRecords = async () => {
     try {

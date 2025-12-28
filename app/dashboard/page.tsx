@@ -48,10 +48,10 @@ export default function Dashboard() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session) {
-      loadDashboardData();
-    }
-  }, [session]);
+    // Load data immediately when component mounts, don't wait for session
+    // Session check is handled by middleware
+    loadDashboardData();
+  }, []); // Empty deps - load once on mount
 
   const loadDashboardData = async () => {
     try {

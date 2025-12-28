@@ -35,10 +35,9 @@ export default function AnalyticsPage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session) {
-      loadAllData();
-    }
-  }, [session]);
+    // Load data immediately on mount - session is checked by middleware
+    loadAllData();
+  }, []); // Empty deps - load once on mount
 
   const loadAllData = async () => {
     try {

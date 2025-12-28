@@ -40,10 +40,10 @@ export default function TasksPage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session) {
-      fetchTasks();
-    }
-  }, [session, selectedDate]);
+    // Fetch tasks immediately on mount or when date changes
+    // Session is checked by middleware
+    fetchTasks();
+  }, [selectedDate]); // Only depend on selectedDate
 
   const fetchTasks = async () => {
     try {
@@ -66,22 +66,44 @@ export default function TasksPage() {
       return;
     }
 
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const requestBody: any = {
+      title: formData.title.trim(),
+      description: formData.description?.trim() || undefined,
+      date: dateStr,
+      priority: formData.priority || 'medium',
+    };
+
+    // Only add dueTime if it's provided
+    if (formData.dueTime) {
+      // Combine date and time
+      const dateTimeStr = `${dateStr}T${formData.dueTime}:00`;
+      requestBody.dueTime = new Date(dateTimeStr).toISOString();
+    }
+
+    // Create optimistic task object
+    const optimisticTask: Task = {
+      _id: `temp-${Date.now()}`,
+      userId: '',
+      title: requestBody.title,
+      description: requestBody.description,
+      date: dateStr,
+      priority: requestBody.priority,
+      completed: false,
+      dueTime: requestBody.dueTime,
+      category: requestBody.category,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Close form and reset immediately
+    setShowAddForm(false);
+    const originalFormData = { ...formData };
+    setFormData({ title: '', description: '', priority: 'medium', dueTime: '' });
+
+    // Optimistically update UI immediately
+    setTasks((prev) => [...prev, optimisticTask]);
+
     try {
-      const dateStr = format(selectedDate, 'yyyy-MM-dd');
-      const requestBody: any = {
-        title: formData.title.trim(),
-        description: formData.description?.trim() || undefined,
-        date: dateStr,
-        priority: formData.priority || 'medium',
-      };
-
-      // Only add dueTime if it's provided
-      if (formData.dueTime) {
-        // Combine date and time
-        const dateTimeStr = `${dateStr}T${formData.dueTime}:00`;
-        requestBody.dueTime = new Date(dateTimeStr).toISOString();
-      }
-
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,20 +113,37 @@ export default function TasksPage() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Error response:', errorData);
+        
+        // Remove optimistic task on error
+        setTasks((prev) => prev.filter((t) => t._id !== optimisticTask._id));
+        
+        // Restore form
+        setFormData(originalFormData);
+        setShowAddForm(true);
+        
         alert(`Failed to add task: ${errorData.error || 'Unknown error'}`);
         return;
       }
 
       const newTask = await response.json();
       
-      // Refresh tasks list
-      await fetchTasks();
+      // Replace optimistic task with real one from server
+      setTasks((prev) => prev.map((t) => 
+        t._id === optimisticTask._id ? newTask : t
+      ));
       
-      // Reset form
-      setFormData({ title: '', description: '', priority: 'medium', dueTime: '' });
-      setShowAddForm(false);
+      // Refresh in background to ensure consistency (but don't wait)
+      fetchTasks().catch(console.error);
     } catch (error) {
       console.error('Error adding task:', error);
+      
+      // Remove optimistic task on error
+      setTasks((prev) => prev.filter((t) => t._id !== optimisticTask._id));
+      
+      // Restore form
+      setFormData(originalFormData);
+      setShowAddForm(true);
+      
       alert('Failed to add task. Please try again.');
     }
   };

@@ -31,10 +31,9 @@ export default function HabitsPage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (session) {
-      fetchHabits();
-    }
-  }, [session]);
+    // Fetch habits immediately on mount - session is checked by middleware
+    fetchHabits();
+  }, []); // Empty deps - load once on mount
 
   const fetchHabits = async () => {
     try {
@@ -78,16 +77,54 @@ export default function HabitsPage() {
     category?: string;
     color?: string;
   }) => {
+    // Close form immediately for better UX
+    setShowAddForm(false);
+    
+    // Create optimistic habit object
+    const optimisticHabit: HabitWithCompletion = {
+      _id: `temp-${Date.now()}`,
+      userId: '',
+      name: formData.name,
+      description: formData.description,
+      category: formData.category,
+      frequency: 'daily',
+      color: formData.color || '#3B82F6',
+      icon: 'default',
+      archived: false,
+      todayCompleted: false,
+      completions: [],
+      createdAt: new Date().toISOString(),
+    };
+    
+    // Optimistically update UI immediately
+    setHabits((prev) => [...prev, optimisticHabit]);
+    
     try {
-      await habitsApi.createHabit(formData);
-      setShowAddForm(false);
-      // Refresh all habits to ensure consistent data and proper grid display
-      await fetchHabits();
+      const newHabit = await habitsApi.createHabit(formData);
+      
+      // Replace optimistic habit with real one from server
+      setHabits((prev) => prev.map((h) => 
+        h._id === optimisticHabit._id ? {
+          ...newHabit,
+          todayCompleted: false,
+          completions: [],
+        } : h
+      ));
+      
+      // Fetch fresh data in background to ensure consistency (but don't wait)
+      fetchHabits().catch(console.error);
     } catch (error: any) {
       console.error('Error adding habit:', error);
+      
+      // Remove optimistic habit on error
+      setHabits((prev) => prev.filter((h) => h._id !== optimisticHabit._id));
+      
       // Extract error message from ApiError
       const errorMessage = error?.data?.error || error?.message || 'Internal server error';
       alert(`Failed to add habit: ${errorMessage}`);
+      
+      // Reopen form so user can try again
+      setShowAddForm(true);
     }
   };
 
