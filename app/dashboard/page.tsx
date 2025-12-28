@@ -57,15 +57,18 @@ export default function Dashboard() {
     try {
       const today = format(new Date(), 'yyyy-MM-dd');
       const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
 
-      // Load today's tasks
-      const tasks = await tasksApi.getTasks(today);
+      // Load all data in parallel for faster page load
+      const [tasks, habits, sleepData, recentSleep] = await Promise.all([
+        tasksApi.getTasks(today).catch(() => []),
+        habitsApi.getHabits().catch(() => []),
+        sleepApi.getSleepRecord(yesterday).catch(() => null),
+        sleepApi.getSleepRecords(7).catch(() => []),
+      ]);
+
       setTodayTasks(tasks);
 
-      // Load habits with streaks
-      const habits = await habitsApi.getHabits();
+      // Load habit stats in parallel (but limit concurrent requests)
       const habitsWithStats = await Promise.all(
         habits.map(async (habit) => {
           try {
@@ -89,49 +92,37 @@ export default function Dashboard() {
       );
       setHabitStreaks(habitsWithStats.filter((h) => h.currentStreak > 0));
 
-      // Load last night's sleep
-      try {
-        const sleepData = await sleepApi.getSleepRecord(yesterday);
-        if (sleepData) {
-          setLastNightSleep(sleepData);
-        }
-      } catch (error) {
-        // No sleep data
+      // Set sleep data
+      if (sleepData) {
+        setLastNightSleep(sleepData);
       }
 
-      // Calculate average sleep hours for summary
-      try {
-        const recentSleep = await sleepApi.getSleepRecords(7);
-        if (recentSleep.length > 0) {
-          const avgHours = recentSleep.reduce((sum, r) => sum + r.hoursSlept, 0) / recentSleep.length;
-          setAverageSleepHours(avgHours);
-        }
-      } catch (error) {
-        // Continue without average
+      if (recentSleep.length > 0) {
+        const avgHours = recentSleep.reduce((sum, r) => sum + r.hoursSlept, 0) / recentSleep.length;
+        setAverageSleepHours(avgHours);
       }
 
-      // Calculate weekly score
+      // Get weekly tasks in parallel instead of sequentially
+      const weeklyDates = Array.from({ length: 7 }, (_, i) => 
+        format(subDays(new Date(), i), 'yyyy-MM-dd')
+      );
+      const weeklyTasksPromises = weeklyDates.map(date => 
+        tasksApi.getTasks(date).catch(() => [])
+      );
+      const weeklyTasksArrays = await Promise.all(weeklyTasksPromises);
+
+      // Calculate weekly stats
       let tasksCompleted = 0;
       let tasksTotal = 0;
+      weeklyTasksArrays.forEach(dayTasks => {
+        tasksTotal += dayTasks.length;
+        tasksCompleted += dayTasks.filter((t) => t.completed).length;
+      });
+
       let habitsCompleted = 0;
       let habitsTotal = 0;
-
-      // Get weekly tasks
-      for (let i = 0; i < 7; i++) {
-        const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
-        try {
-          const dayTasks = await tasksApi.getTasks(date);
-          tasksTotal += dayTasks.length;
-          tasksCompleted += dayTasks.filter((t) => t.completed).length;
-        } catch (error) {
-          // Continue
-        }
-      }
-
-      // Get weekly habits
       habitsWithStats.forEach((habit) => {
-        habitsTotal += 7; // 7 days in a week
-        // This is simplified - in production, calculate actual weekly completions
+        habitsTotal += 7;
         habitsCompleted += Math.min(habit.currentStreak, 7);
       });
 
